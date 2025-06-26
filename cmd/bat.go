@@ -72,13 +72,44 @@ func runBatFile(filename string) error {
 				}
 			}
 		case "IF":
-			if len(rest) < 3 && strings.Contains(rest[1], "==") {
-				left := strings.Trim(rest[0], "%")
-				right := rest[2]
-				condition := variables[strings.ToUpper(left)] == right
-				if condition {
-					cmd := strings.Join(rest[3:], " ")
-					lines = append(lines[:lineNum], append([]string{cmd}, lines[lineNum:]...)...)
+			if len(rest) >= 2 {
+				condition := rest[0]
+				if strings.Contains(condition, "==") {
+					parts := strings.SplitN(condition, "==", 2)
+					if len(parts) == 2 {
+						// handle if variables, aaaaaaaaHHHHHHHHH THIS IS A DISGUSTING HACK
+						leftRaw := strings.Trim(parts[0], "%")
+						right := parts[1]
+						left := strings.ToUpper((leftRaw))
+						ifVal := variables[left]
+
+						if ifVal == right && len(rest) > 1 {
+							// execute rest of shit
+							cmdParts := strings.Fields(strings.Join(rest[1:], " "))
+							if len(cmdParts) == 0 {
+								break
+							}
+
+							cmdName := strings.ToUpper(cmdParts[0])
+							cmdArgs := cmdParts[1:]
+
+							switch cmdName {
+							case "ECHO":
+								fmt.Println(strings.Join(cmdArgs, " "))
+							case "CD":
+								changeDirectory(cmdArgs)
+							case "DIR":
+								listDirectory()
+							case "CLS":
+								clearScreen()
+							default:
+								if strings.HasPrefix(cmdName, ":") {
+									continue
+								}
+								runExternalCommand(cmdParts[0], cmdArgs)
+							}
+						}
+					}
 				}
 			}
 		case "ECHO":
@@ -92,9 +123,10 @@ func runBatFile(filename string) error {
 		case "CLS":
 			clearScreen()
 		default:
-			if strings.HasPrefix(line, ":") {
-				return nil // this may be a label, so we just skip it
+			if strings.HasPrefix(command, ":") {
+				continue
 			}
+
 			runExternalCommand(args[0], rest)
 		}
 	}
