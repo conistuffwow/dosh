@@ -36,7 +36,14 @@ func StartShell() {
 		case "DIR":
 			listDirectory()
 		default:
-			runExternalCommand(args[0], restArgs)
+			if strings.HasSuffix(strings.ToLower(args[0]), ".bat") {
+				err := runBatFile(args[0])
+				if err != nil {
+					fmt.Println("error running bat file:", err)
+				}
+			} else {
+				runExternalCommand(args[0], restArgs)
+			}
 		}
 	}
 }
@@ -81,7 +88,4 @@ func runExternalCommand(command string, args []string) {
 	if err != nil {
 		fmt.Println("error running command:", err)
 	}
-}
-func runBatFile(filename string) error {
-
 }
